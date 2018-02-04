@@ -1,0 +1,123 @@
+syntax="proto3";
+
+//package	rbk.protocol;
+import	"google/protobuf/wrappers.proto";
+message	Message_MapProperty	
+{
+  string key = 1;          //属性名
+  string type =	2;         //属性值的类型,这里type一定是string,bool,int32,uint32,int64,uint64,float,double,bytes中的一个
+  bytes	value =	3;         //属性值(for backward	compatibility)
+  oneof	oneof_value{       //属性值
+       string string_value = 4;
+       bool bool_value	= 5;
+       int32 int32_value = 6;
+       uint32 uint32_value = 7;
+       int64 int64_value = 8;
+       uint64 uint64_value = 9;
+       float  float_value = 10;
+       double double_value = 11;
+       bytes bytes_value = 12;
+				}
+}
+//普通点
+message	Message_MapPos{
+	double	x = 1;
+	double	y = 2;
+}
+//普通线
+message	Message_MapLine	{
+	Message_MapPos	start_pos = 1;	//	线的起始点
+	Message_MapPos	end_pos	= 2;	//	线的终止点
+}
+//地图元数据
+message	Message_MapHeader{
+	string	map_type = 1;	//type	of map:	2D-map	or 3D-map
+	string	map_name = 2;	//name	of map:	the map	file name
+	Message_MapPos	min_pos	= 3;	//地图中	x,y 最小值,该点不一定存在,只是指示包含增长地图的矩形的左下点
+	Message_MapPos	max_pos	= 4;	//地图中	x,y 最大值,该点不一定存在,只是指示包含增长地图的矩形的右上点
+        double	resolution = 5;	//分辨率	(m)
+	string	version	= 8;	//地图的格式的版本号
+}
+//特征,用户不必关注该条目
+message	Message_MapAttribute	{
+	string	description = 1; //description	of the	this class
+	uint32	color_pen = 2;
+	uint32	color_brush = 3;
+	uint32	color_font = 4;
+}
+//高级点
+message	Message_AdvancedPoint	{
+	string	class_name = 1;	//高级点的类型,目前只有 LandMark(普通站点),ChargePoint(充电点),ReturnPoint(返航点),GyroCaliPoint(陀螺仪标定点),RobotHome(出生点)
+	string	instance_name = 2;                      //唯一标识名
+	Message_MapPos	pos = 3;                        //点坐标
+	double	dir = 4;				//方向
+	repeated Message_MapProperty	property = 5;	//高级点的属性
+	Message_MapAttribute	attribute = 10;	        //特征
+}
+//高级线
+message	Message_AdvancedLine{
+	string	class_name = 1;		//高级线的类型,目前只有ForbiddenLine,NormalLine,VirtualLine
+	string	instance_name = 2;	//唯一标识名
+	Message_MapLine	line =	3;	//线坐标
+	repeated Message_MapProperty	property = 4;	//高级线的属性
+	Message_MapAttribute	attribute = 10;         //特征
+}
+// 高级曲线(用于连接两个高级点),目前只有 BezierPath(三阶贝塞尔曲线)一种
+message	Message_AdvancedCurve{
+	string	class_name = 1;		//高级曲线的类型,目前只有BezierPath(贝塞尔曲线)一种
+	string	instance_name =	2;		     //唯一标识名
+	Message_AdvancedPoint	start_pos = 3;	    //曲线起始点(是某个高级点,一定是地图中出现过的某个高级点)
+	Message_AdvancedPoint	end_pos	= 4;        //曲线终止点(是某个高级点,一定是地图中出现过的某个高级点)
+	Message_MapPos	control_pos1 = 5;	    //曲线控制点1
+	Message_MapPos	control_pos2 = 6;	    //曲线控制点2
+	repeated Message_MapProperty property =	7;  //高级曲线的属性
+	repeated Message_Device	devices	= 12;	    //设备模型相关信息
+	Message_MapAttribute	attribute = 15;	    //特征
+}
+//高级区域
+message	Message_AdvancedArea{
+	string	class_name = 1;                 //高级曲线的类型,
+	string	instance_name =	2;	        //唯一标识名
+	repeated Message_MapPos	pos_group = 3;	//区域边界线
+	double	dir = 4;	                //方向
+	repeated Message_MapProperty	property = 5;	//高级区域的属性
+	repeated Message_Device	devices	= 10;		//设备模型相关信息
+	Message_MapAttribute attribute	= 15;	        //特征
+}
+//激光设备,用户不必关注
+message	Message_LaserDevice{
+	uint32	id = 1;
+	repeated Message_MapPos	laser_margin_pos = 2;
+}
+//设备模型信息,用户不必关注
+message	Message_Device{
+	string	model_name = 1;
+        repeated Message_LaserDevice	laser_devices = 5;
+	repeated double	ultrasonic_dist	= 6;	//	dist=-1	means	not	used
+	repeated double	fallingdown_dist = 7;	//	dist=-1	means	not	used
+}
+//巡检站点
+message	Message_PatrolRouteStation	{
+	string	id = 1;	//站点ID
+}
+//巡检线路
+message	Message_PatrolRoute{
+	string	name =1;	//线路名称
+	repeated Message_PatrolRouteStation station_list = 2;	//线路上的站点列表
+	google.protobuf.DoubleValue	max_speed = 4;		//巡检线路上的最大速度,若缺省则使用地图中的设置
+	google.protobuf.DoubleValue	max_acc	= 5;		//巡检线路上的最大加速度,若缺省则使用地图中的设置
+	google.protobuf.DoubleValue	max_rot	= 6;		//巡检线路上的最大角速度,若缺省则使用地图中的设置
+	google.protobuf.DoubleValue	max_rot_acc = 7;	//巡检线路上的最大角加速度,若缺省则使用地图中的设置
+}
+//地图
+message	Message_Map{
+	string	map_directory = 1;
+	Message_MapHeader header= 2;	                                //元数据
+	repeated Message_MapPos	normal_pos_list	= 3;	                //普通点数组
+	repeated Message_MapLine normal_line_list = 4;	                //普通线数组
+	repeated Message_AdvancedPoint	advanced_point_list = 6;	//高级点数组
+	repeated Message_AdvancedLine   advanced_line_list = 7;		//高级线数组
+	repeated Message_AdvancedCurve	advanced_curve_list = 8;	//高级曲线数组
+	repeated Message_AdvancedArea	advanced_area_list = 9;		//高级区域数组
+	repeated Message_PatrolRoute	patrol_route_list = 10;	        //巡检线路数组
+}
